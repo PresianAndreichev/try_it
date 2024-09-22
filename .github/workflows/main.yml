@@ -1,9 +1,7 @@
 name: Main workflow
 on: push
 env:
-  docker_username: presianandreichev
-  docker_password: Pr7@$^*)
-  GIT_COMMIT: ${{github.sha}}
+  GIT_COMMIT: ${{ github.sha }}
 jobs:
   Linting: 
     runs-on: ubuntu-latest
@@ -18,9 +16,9 @@ jobs:
         uses: super-linter/super-linter/slim@v5
         env:
           DEFAULT_BRANCH: main
-          docker_username: ${{ secrets.DOCKER_USERNAME }}
-          docker_password: ${{ secrets.DOCKER_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DISABLE_ERRORS: true
+  
   Build:
     runs-on: ubuntu-latest
     container: gradle:6-jdk11
@@ -36,42 +34,54 @@ jobs:
         with:
           name: code
           path: .
+  
   Docker-image: 
     runs-on: ubuntu-latest
     needs: [Build]
     permissions: 
       packages: write
     steps:
-    - name: Download code
-      uses: actions/download-artifact@v4
-      with: 
-        name: code
-        path: .
-    - name: ls
-      run: ls -la ci
-    - name: build docker
-      run: bash ci/build-docker.sh
-    - name: push docker
-      run: bash ci/push-docker.sh
+      - name: Download code
+        uses: actions/download-artifact@v4
+        with: 
+          name: code
+          path: .
+      
+      - name: List files for debugging
+        run: ls -la ci
+
+      - name: Log in to Docker Hub
+        run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image
+        run: docker build -t presianandreichev/myapp:${{ github.sha }} .
+
+      - name: Push Docker image to Docker Hub
+        run: docker push presianandreichev/myapp:${{ github.sha }}
+
   Component-test:
     runs-on: ubuntu-latest
     needs: Docker-image
     steps:
-    - name: Download code
-      uses: actions/download-artifact@v4
-      with:
-        name: code
-        path: .
-    - name: Execute component test
-      run: bash ci/component-test.sh
+      - name: Download code
+        uses: actions/download-artifact@v4
+        with:
+          name: code
+          path: .
+      - name: Execute component test
+        run: bash ci/component-test.sh
+
   Performance-test:
     runs-on: ubuntu-latest
     needs: Docker-image
     steps:
-    - name: Download code
-      uses: actions/download-artifact@v4
-      with:
-        name: code
-        path: .
-    - name: Execute performance test
-      run: bash ci/performance-test.sh
+      - name: Download code
+        uses: actions/download-artifact@v4
+        with:
+          name: code
+          path: .
+      - name: Execute performance test
+        run: bash ci/performance-test.sh
