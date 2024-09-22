@@ -57,7 +57,7 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: docker build -t presianandreichev/myapp:${{ github.sha }} .
+        run: docker build -t presianandreichev/myapp:${{ github.sha }} -f ci/Dockerfile .
 
       - name: Push Docker image to Docker Hub
         run: docker push presianandreichev/myapp:${{ github.sha }}
