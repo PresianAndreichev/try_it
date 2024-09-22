@@ -18,7 +18,8 @@ jobs:
         uses: super-linter/super-linter/slim@v5
         env:
           DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          docker_username: ${{ secrets.DOCKER_USERNAME }}
+          docker_password: ${{ secrets.DOCKER_PASSWORD }}
           DISABLE_ERRORS: true
   Build:
     runs-on: ubuntu-latest
